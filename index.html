@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>₴ UAH Rates</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --border: #222222;
+    --border2: #2a2a2a;
+    --text: #e8e8e8;
+    --text2: #888888;
+    --text3: #555555;
+    --amber: #f5a623;
+    --amber2: #c47e0f;
+    --amber-dim: rgba(245,166,35,0.12);
+    --amber-dim2: rgba(245,166,35,0.06);
+    --green: #4caf7d;
+    --green-dim: rgba(76,175,125,0.12);
+    --red: #e05252;
+    --red-dim: rgba(224,82,82,0.12);
+    --blue: #5b9bd5;
+    --blue-dim: rgba(91,155,213,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header {
+    padding: 16px 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--text3); font-weight: 300; }
+  .last-updated {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.3px;
+  }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .refresh-btn:active { background: var(--bg3); color: var(--amber); border-color: var(--amber2); }
+  .refresh-icon { display: inline-block; transition: transform 0.6s; }
+  .refresh-btn.loading .refresh-icon { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Rate Cards */
+  .rate-cards {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .rate-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeUp 0.4s ease forwards;
+  }
+  .rate-card:nth-child(1) { animation-delay: 0.05s; }
+  .rate-card:nth-child(2) { animation-delay: 0.1s; }
+  .rate-card:nth-child(3) { animation-delay: 0.15s; }
+  .rate-card:nth-child(4) { animation-delay: 0.2s; }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .rate-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .rate-card.usd-buy::before { background: var(--green); }
+  .rate-card.usd-sell::before { background: var(--red); }
+  .rate-card.eur-buy::before { background: var(--blue); }
+  .rate-card.eur-sell::before { background: var(--amber); }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .card-pair {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+  .card-rate {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: -1px;
+  }
+  .card-rate.usd-buy { color: var(--green); }
+  .card-rate.usd-sell { color: var(--red); }
+  .card-rate.eur-buy { color: var(--blue); }
+  .card-rate.eur-sell { color: var(--amber); }
+
+  .card-change {
+    font-family: var(--mono);
+    font-size: 10px;
+    margin-top: 6px;
+    color: var(--text3);
+  }
+  .card-change.up { color: var(--green); }
+  .card-change.down { color: var(--red); }
+
+  .card-source {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Period Selector */
+  .period-bar {
+    padding: 0 16px 12px;
+    display: flex;
+    gap: 6px;
+  }
+  .period-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .period-btn.active {
+    background: var(--amber-dim);
+    border-color: var(--amber2);
+    color: var(--amber);
+  }
+  .period-btn:active { opacity: 0.7; }
+
+  /* Currency Tabs */
+  .currency-tabs {
+    padding: 0 16px 12px;
+    display: flex;
+    gap: 6px;
+  }
+  .currency-tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .currency-tab.active.usd {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .currency-tab.active.eur {
+    background: var(--blue-dim);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* Chart */
+  .chart-section {
+    padding: 0 16px 16px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .chart-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .chart-legend {
+    display: flex;
+    gap: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+  }
+  .legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .chart-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 8px 8px;
+    position: relative;
+  }
+  canvas {
+    display: block;
+    width: 100% !important;
+  }
+
+  /* Loading / Error */
+  .status-bar {
+    margin: 0 16px 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    display: none;
+  }
+  .status-bar.loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--amber-dim2);
+    border: 1px solid var(--amber2);
+    color: var(--amber);
+  }
+  .status-bar.error {
+    display: block;
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    color: var(--red);
+  }
+  .spinner {
+    width: 10px; height: 10px;
+    border: 1.5px solid var(--amber2);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* Data table */
+  .table-section {
+    padding: 0 16px 24px;
+  }
+  .table-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .data-table th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 10px;
+    text-align: right;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table th:first-child { text-align: left; }
+  .data-table td {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .data-table td:first-child { text-align: left; color: var(--text3); font-size: 11px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--bg3); }
+  .td-buy { color: var(--green) !important; }
+  .td-sell { color: var(--red) !important; }
+  .td-buy-eur { color: var(--blue) !important; }
+  .td-sell-eur { color: var(--amber) !important; }
+
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 16px 16px;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">₴<span>rates</span></div>
+    <div class="last-updated" id="lastUpdated">—</div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadAll()">
+    <span class="refresh-icon">↻</span> Refresh
+  </button>
+</div>
+
+<div style="padding: 16px 16px 0;">
+  <div style="font-family: var(--mono); font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin-bottom: 10px;">Live rates · PrivatBank</div>
+</div>
+
+<div class="rate-cards" id="rateCards">
+  <div class="rate-card usd-buy">
+    <div class="card-label">USD · Buy</div>
+    <div class="card-rate usd-buy skeleton" style="width:80px;height:26px;" id="r-usd-buy">—</div>
+    <div class="card-change" id="c-usd-buy"></div>
+    <div class="card-source">₴ per 1 USD</div>
+  </div>
+  <div class="rate-card usd-sell">
+    <div class="card-label">USD · Sell</div>
+    <div class="card-rate usd-sell" id="r-usd-sell">—</div>
+    <div class="card-change" id="c-usd-sell"></div>
+    <div class="card-source">₴ per 1 USD</div>
+  </div>
+  <div class="rate-card eur-buy">
+    <div class="card-label">EUR · Buy</div>
+    <div class="card-rate eur-buy" id="r-eur-buy">—</div>
+    <div class="card-change" id="c-eur-buy"></div>
+    <div class="card-source">₴ per 1 EUR</div>
+  </div>
+  <div class="rate-card eur-sell">
+    <div class="card-label">EUR · Sell</div>
+    <div class="card-rate eur-sell" id="r-eur-sell">—</div>
+    <div class="card-change" id="c-eur-sell"></div>
+    <div class="card-source">₴ per 1 EUR</div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="currency-tabs">
+  <button class="currency-tab active usd" id="tab-usd" onclick="switchCurrency('usd')">USD/UAH</button>
+  <button class="currency-tab eur" id="tab-eur" onclick="switchCurrency('eur')">EUR/UAH</button>
+</div>
+
+<div class="period-bar">
+  <button class="period-btn" id="p-1w" onclick="switchPeriod(7)">1W</button>
+  <button class="period-btn active" id="p-2w" onclick="switchPeriod(14)">2W</button>
+  <button class="period-btn" id="p-1m" onclick="switchPeriod(30)">1M</button>
+  <button class="period-btn" id="p-3m" onclick="switchPeriod(90)">3M</button>
+  <button class="period-btn" id="p-1y" onclick="switchPeriod(365)">1Y</button>
+</div>
+
+<div id="statusBar" class="status-bar"></div>
+
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="chart-title" id="chartTitle">USD/UAH · 14 days</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Sell</div>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="rateChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="table-section">
+  <div class="table-title" id="tableTitle">USD/UAH · Daily rates</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th id="th-buy">Buy</th>
+        <th id="th-sell">Sell</th>
+      </tr>
+    </thead>
+    <tbody id="rateTableBody">
+      <tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:11px;padding:20px;">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────────────
+let currentCurrency = 'usd';
+let currentDays = 14;
+let chartInstance = null;
+let historicalData = { usd: [], eur: [] };
+let liveRates = {};
+
+// ─── Helpers ─────────────────────────────────────────────────
+function fmt(n) { return n ? parseFloat(n).toFixed(2) : '—'; }
+
+function dateStr(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+function isoToDisplay(iso) {
+  // iso: YYYY-MM-DD → DD.MM
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}`;
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('statusBar');
+  el.className = 'status-bar ' + type;
+  if (type === 'loading') {
+    el.innerHTML = `<div class="spinner"></div>${msg}`;
+  } else if (type === 'error') {
+    el.textContent = msg;
+  } else {
+    el.className = 'status-bar';
+  }
+}
+
+// ─── PrivatBank API via CORS proxy ───────────────────────────
+// PrivatBank's public archive API: /p24api/exchange_rates?json&date=DD.MM.YYYY
+// We use a CORS proxy since browser apps can't call bank APIs directly cross-origin
+const PROXY = 'https://api.allorigins.win/get?url=';
+
+async function fetchPrivatRate(dateStr) {
+  const url = `https://api.privatbank.ua/p24api/exchange_rates?json&date=${dateStr}`;
+  const resp = await fetch(PROXY + encodeURIComponent(url));
+  const outer = await resp.json();
+  const data = JSON.parse(outer.contents);
+  const rates = {};
+  for (const r of (data.exchangeRate || [])) {
+    if (r.currency === 'USD') {
+      rates.usd = { buy: r.purchaseRateNB || r.purchaseRate, sell: r.saleRateNB || r.saleRate,
+                    buyReal: r.purchaseRate, sellReal: r.saleRate };
+    }
+    if (r.currency === 'EUR') {
+      rates.eur = { buy: r.purchaseRateNB || r.purchaseRate, sell: r.saleRateNB || r.saleRate,
+                    buyReal: r.purchaseRate, sellReal: r.saleRate };
+    }
+  }
+  return { date: data.date, rates };
+}
+
+async function fetchToday() {
+  const today = dateStr(0);
+  try {
+    const { rates } = await fetchPrivatRate(today);
+    return rates;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function fetchHistory(days) {
+  const results = [];
+  // Fetch in parallel batches of 5
+  const dates = [];
+  for (let i = days; i >= 0; i--) dates.push(i);
+
+  for (let b = 0; b < dates.length; b += 5) {
+    const batch = dates.slice(b, b + 5);
+    const fetches = batch.map(async (ago) => {
+      const d = dateStr(ago);
+      try {
+        return await fetchPrivatRate(d);
+      } catch(e) {
+        return null;
+      }
+    });
+    const res = await Promise.all(fetches);
+    res.forEach(r => { if (r) results.push(r); });
+    // Small pause between batches to be polite
+    if (b + 5 < dates.length) await new Promise(r => setTimeout(r, 200));
+  }
+  return results.sort((a,b) => {
+    // sort by date ascending (date is DD.MM.YYYY)
+    const parse = s => { const [d,m,y] = s.split('.'); return new Date(y,m-1,d); };
+    return parse(a.date) - parse(b.date);
+  });
+}
+
+// ─── Update live rate cards ───────────────────────────────────
+function updateCards(rates, prevRates) {
+  const fields = [
+    { id: 'r-usd-buy', chg: 'c-usd-buy', val: rates.usd?.buyReal, prev: prevRates?.usd?.buyReal },
+    { id: 'r-usd-sell', chg: 'c-usd-sell', val: rates.usd?.sellReal, prev: prevRates?.usd?.sellReal },
+    { id: 'r-eur-buy', chg: 'c-eur-buy', val: rates.eur?.buyReal, prev: prevRates?.eur?.buyReal },
+    { id: 'r-eur-sell', chg: 'c-eur-sell', val: rates.eur?.sellReal, prev: prevRates?.eur?.sellReal },
+  ];
+  for (const f of fields) {
+    const el = document.getElementById(f.id);
+    const chgEl = document.getElementById(f.chg);
+    if (el && f.val) {
+      el.classList.remove('skeleton');
+      el.textContent = fmt(f.val);
+    }
+    if (chgEl && f.val && f.prev) {
+      const diff = (f.val - f.prev).toFixed(2);
+      const sign = diff > 0 ? '+' : '';
+      chgEl.textContent = `${sign}${diff} vs yesterday`;
+      chgEl.className = 'card-change ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : '');
+    }
+  }
+}
+
+// ─── Chart ───────────────────────────────────────────────────
+function buildChart(data, currency, days) {
+  const filtered = data.slice(-days);
+  const labels = filtered.map(d => {
+    const [dd,mm] = d.date.split('.');
+    return `${dd}.${mm}`;
+  });
+
+  const buyData = filtered.map(d => d.rates[currency]?.buyReal || null);
+  const sellData = filtered.map(d => d.rates[currency]?.sellReal || null);
+
+  const buyColor = currency === 'usd' ? '#4caf7d' : '#5b9bd5';
+  const sellColor = currency === 'usd' ? '#e05252' : '#f5a623';
+  const buyFill = currency === 'usd' ? 'rgba(76,175,125,0.08)' : 'rgba(91,155,213,0.08)';
+  const sellFill = currency === 'usd' ? 'rgba(224,82,82,0.08)' : 'rgba(245,166,35,0.08)';
+
+  const ctx = document.getElementById('rateChart').getContext('2d');
+
+  if (chartInstance) { chartInstance.destroy(); }
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Buy',
+          data: buyData,
+          borderColor: buyColor,
+          backgroundColor: buyFill,
+          borderWidth: 1.5,
+          pointRadius: filtered.length > 60 ? 0 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: buyColor,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'Sell',
+          data: sellData,
+          borderColor: sellColor,
+          backgroundColor: sellFill,
+          borderWidth: 1.5,
+          pointRadius: filtered.length > 60 ? 0 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: sellColor,
+          tension: 0.3,
+          fill: true,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a',
+          borderColor: '#333',
+          borderWidth: 1,
+          titleColor: '#888',
+          bodyColor: '#e8e8e8',
+          titleFont: { family: 'IBM Plex Mono', size: 10 },
+          bodyFont: { family: 'IBM Plex Mono', size: 12 },
+          padding: 10,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ₴${ctx.parsed.y?.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+          ticks: {
+            color: '#555',
+            font: { family: 'IBM Plex Mono', size: 9 },
+            maxTicksLimit: 7,
+            maxRotation: 0,
+          },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+          ticks: {
+            color: '#555',
+            font: { family: 'IBM Plex Mono', size: 9 },
+            callback: v => `₴${v.toFixed(1)}`
+          },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ─── Table ────────────────────────────────────────────────────
+function buildTable(data, currency, days) {
+  const filtered = [...data].slice(-days).reverse();
+  const tbody = document.getElementById('rateTableBody');
+  const buyClass = currency === 'usd' ? 'td-buy' : 'td-buy-eur';
+  const sellClass = currency === 'usd' ? 'td-sell' : 'td-sell-eur';
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:11px;padding:20px;">No data</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(d => {
+    const r = d.rates[currency];
+    const buy = r?.buyReal ? fmt(r.buyReal) : '—';
+    const sell = r?.sellReal ? fmt(r.sellReal) : '—';
+    return `<tr>
+      <td>${d.date.substring(0,5)}</td>
+      <td class="${buyClass}">${buy}</td>
+      <td class="${sellClass}">${sell}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── UI switching ─────────────────────────────────────────────
+function switchCurrency(cur) {
+  currentCurrency = cur;
+  document.getElementById('tab-usd').className = 'currency-tab' + (cur === 'usd' ? ' active usd' : '');
+  document.getElementById('tab-eur').className = 'currency-tab' + (cur === 'eur' ? ' active eur' : '');
+  const label = cur.toUpperCase();
+  document.getElementById('chartTitle').textContent = `${label}/UAH · ${currentDays} days`;
+  document.getElementById('tableTitle').textContent = `${label}/UAH · Daily rates`;
+  document.getElementById('th-buy').textContent = `Buy ₴`;
+  document.getElementById('th-sell').textContent = `Sell ₴`;
+
+  const legend = document.querySelector('.chart-legend');
+  if (cur === 'usd') {
+    legend.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Sell</div>`;
+  } else {
+    legend.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Sell</div>`;
+  }
+
+  renderChartAndTable();
+}
+
+function switchPeriod(days) {
+  currentDays = days;
+  ['1w','2w','1m','3m','1y'].forEach(p => {
+    document.getElementById('p-'+p).className = 'period-btn';
+  });
+  const map = {7:'1w',14:'2w',30:'1m',90:'3m',365:'1y'};
+  document.getElementById('p-'+map[days]).className = 'period-btn active';
+  document.getElementById('chartTitle').textContent = `${currentCurrency.toUpperCase()}/UAH · ${days} days`;
+
+  // If we need more data than we have, fetch more
+  const allData = historicalData[currentCurrency];
+  if (allData.length < days + 1) {
+    loadHistory(days);
+  } else {
+    renderChartAndTable();
+  }
+}
+
+function renderChartAndTable() {
+  const data = historicalData[currentCurrency] || [];
+  if (data.length) {
+    buildChart(data, currentCurrency, currentDays);
+    buildTable(data, currentCurrency, currentDays);
+  }
+}
+
+// ─── Main load ────────────────────────────────────────────────
+async function loadHistory(days) {
+  setStatus('loading', `Fetching ${days}-day history from PrivatBank…`);
+  try {
+    const data = await fetchHistory(days);
+    // Merge USD and EUR into shared array
+    historicalData.usd = data;
+    historicalData.eur = data;
+    renderChartAndTable();
+    setStatus('', '');
+  } catch(e) {
+    setStatus('error', '⚠ Could not load historical data. Check your connection and refresh.');
+  }
+}
+
+async function loadLive() {
+  try {
+    const today = await fetchToday();
+    if (today) {
+      liveRates.today = today;
+      // Get yesterday for comparison
+      const yesterday = dateStr(1);
+      const { rates: prevRates } = await fetchPrivatRate(yesterday);
+      liveRates.yesterday = prevRates;
+      updateCards(today, prevRates);
+      const now = new Date();
+      document.getElementById('lastUpdated').textContent =
+        `Updated ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+  } catch(e) {
+    // Cards will show dashes, non-critical
+  }
+}
+
+async function loadAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+  await Promise.all([
+    loadLive(),
+    loadHistory(currentDays)
+  ]);
+  btn.classList.remove('loading');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
