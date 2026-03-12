@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>₴ UAH Rates</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --border: #222222;
+    --border2: #2a2a2a;
+    --text: #e8e8e8;
+    --text2: #888888;
+    --text3: #555555;
+    --amber: #f5a623;
+    --amber2: #c47e0f;
+    --amber-dim: rgba(245,166,35,0.12);
+    --amber-dim2: rgba(245,166,35,0.06);
+    --green: #4caf7d;
+    --green-dim: rgba(76,175,125,0.12);
+    --red: #e05252;
+    --red-dim: rgba(224,82,82,0.12);
+    --blue: #5b9bd5;
+    --blue-dim: rgba(91,155,213,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    padding: 16px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--amber); letter-spacing: -0.5px; }
+  .logo span { color: var(--text3); font-weight: 300; }
+  .last-updated { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.3px; }
+  .refresh-btn {
+    background: none; border: 1px solid var(--border2); color: var(--text2);
+    font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 4px;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+  }
+  .refresh-btn:active { background: var(--bg3); color: var(--amber); border-color: var(--amber2); }
+  .refresh-icon { display: inline-block; }
+  .refresh-btn.loading .refresh-icon { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .rate-cards {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .rate-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; position: relative; overflow: hidden;
+    opacity: 0; transform: translateY(10px);
+    animation: fadeUp 0.4s ease forwards;
+  }
+  .rate-card:nth-child(1) { animation-delay: 0.05s; }
+  .rate-card:nth-child(2) { animation-delay: 0.1s; }
+  .rate-card:nth-child(3) { animation-delay: 0.15s; }
+  .rate-card:nth-child(4) { animation-delay: 0.2s; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .rate-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .rate-card.usd-buy::before { background: var(--green); }
+  .rate-card.usd-sell::before { background: var(--red); }
+  .rate-card.eur-buy::before { background: var(--blue); }
+  .rate-card.eur-sell::before { background: var(--amber); }
+
+  .card-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .card-rate { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1; color: var(--text); letter-spacing: -1px; }
+  .card-rate.usd-buy { color: var(--green); }
+  .card-rate.usd-sell { color: var(--red); }
+  .card-rate.eur-buy { color: var(--blue); }
+  .card-rate.eur-sell { color: var(--amber); }
+  .card-change { font-family: var(--mono); font-size: 10px; margin-top: 6px; color: var(--text3); }
+  .card-change.up { color: var(--green); }
+  .card-change.down { color: var(--red); }
+  .card-source { font-family: var(--mono); font-size: 9px; color: var(--text3); margin-top: 4px; }
+
+  .period-bar { padding: 0 16px 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .period-btn {
+    font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 4px;
+    border: 1px solid var(--border2); background: none; color: var(--text3); cursor: pointer;
+    transition: all 0.15s; letter-spacing: 0.5px;
+  }
+  .period-btn.active { background: var(--amber-dim); border-color: var(--amber2); color: var(--amber); }
+
+  .currency-tabs { padding: 0 16px 12px; display: flex; gap: 6px; }
+  .currency-tab {
+    font-family: var(--mono); font-size: 11px; padding: 6px 14px; border-radius: 4px;
+    border: 1px solid var(--border2); background: none; color: var(--text3); cursor: pointer; transition: all 0.15s;
+  }
+  .currency-tab.active.usd { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .currency-tab.active.eur { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+
+  .chart-section { padding: 0 16px 16px; }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .chart-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); }
+  .chart-legend { display: flex; gap: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; color: var(--text3); }
+  .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px 8px; }
+  canvas { display: block; width: 100% !important; }
+
+  .status-bar { margin: 0 16px 12px; padding: 10px 14px; border-radius: 6px; font-family: var(--mono); font-size: 11px; display: none; }
+  .status-bar.loading { display: flex; align-items: center; gap: 8px; background: var(--amber-dim2); border: 1px solid var(--amber2); color: var(--amber); }
+  .status-bar.error { display: block; background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+  .spinner { width: 10px; height: 10px; border: 1.5px solid var(--amber2); border-top-color: var(--amber); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+
+  .table-section { padding: 0 16px 24px; }
+  .table-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .data-table { width: 100%; border-collapse: collapse; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .data-table th { font-family: var(--mono); font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); padding: 8px 10px; text-align: right; background: var(--bg3); border-bottom: 1px solid var(--border); }
+  .data-table th:first-child { text-align: left; }
+  .data-table td { font-family: var(--mono); font-size: 12px; padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .data-table td:first-child { text-align: left; color: var(--text3); font-size: 11px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--bg3); }
+  .td-buy { color: var(--green) !important; }
+  .td-sell { color: var(--red) !important; }
+  .td-buy-eur { color: var(--blue) !important; }
+  .td-sell-eur { color: var(--amber) !important; }
+
+  .section-divider { height: 1px; background: var(--border); margin: 0 16px 16px; }
+
+  .cache-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--mono); font-size: 9px; color: var(--text3);
+    background: var(--bg3); border: 1px solid var(--border2);
+    padding: 2px 7px; border-radius: 3px; margin-left: 6px;
+  }
+  .cache-badge.fresh { color: var(--green); border-color: rgba(76,175,125,0.3); background: var(--green-dim); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">₴<span>rates</span></div>
+    <div class="last-updated" id="lastUpdated">—</div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadAll(true)">
+    <span class="refresh-icon">↻</span> Refresh
+  </button>
+</div>
+
+<div style="padding: 14px 16px 0; display:flex; align-items:center; gap:6px;">
+  <div style="font-family: var(--mono); font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3);">Live rates · PrivatBank</div>
+  <span class="cache-badge" id="cacheBadge"></span>
+</div>
+
+<div class="rate-cards">
+  <div class="rate-card usd-buy">
+    <div class="card-label">USD · Buy</div>
+    <div class="card-rate usd-buy" id="r-usd-buy">—</div>
+    <div class="card-change" id="c-usd-buy"></div>
+    <div class="card-source">₴ per 1 USD</div>
+  </div>
+  <div class="rate-card usd-sell">
+    <div class="card-label">USD · Sell</div>
+    <div class="card-rate usd-sell" id="r-usd-sell">—</div>
+    <div class="card-change" id="c-usd-sell"></div>
+    <div class="card-source">₴ per 1 USD</div>
+  </div>
+  <div class="rate-card eur-buy">
+    <div class="card-label">EUR · Buy</div>
+    <div class="card-rate eur-buy" id="r-eur-buy">—</div>
+    <div class="card-change" id="c-eur-buy"></div>
+    <div class="card-source">₴ per 1 EUR</div>
+  </div>
+  <div class="rate-card eur-sell">
+    <div class="card-label">EUR · Sell</div>
+    <div class="card-rate eur-sell" id="r-eur-sell">—</div>
+    <div class="card-change" id="c-eur-sell"></div>
+    <div class="card-source">₴ per 1 EUR</div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="currency-tabs">
+  <button class="currency-tab active usd" id="tab-usd" onclick="switchCurrency('usd')">USD/UAH</button>
+  <button class="currency-tab eur" id="tab-eur" onclick="switchCurrency('eur')">EUR/UAH</button>
+</div>
+
+<div class="period-bar">
+  <button class="period-btn" id="p-1w" onclick="switchPeriod(7)">1W</button>
+  <button class="period-btn active" id="p-2w" onclick="switchPeriod(14)">2W</button>
+  <button class="period-btn" id="p-1m" onclick="switchPeriod(30)">1M</button>
+  <button class="period-btn" id="p-3m" onclick="switchPeriod(90)">3M</button>
+  <button class="period-btn" id="p-1y" onclick="switchPeriod(365)">1Y</button>
+</div>
+
+<div id="statusBar" class="status-bar"></div>
+
+<div class="chart-section">
+  <div class="chart-header">
+    <div class="chart-title" id="chartTitle">USD/UAH · 14 days</div>
+    <div class="chart-legend" id="chartLegend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Sell</div>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="rateChart" height="200"></canvas>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="table-section">
+  <div class="table-title" id="tableTitle">USD/UAH · Daily rates</div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th id="th-buy">Buy ₴</th>
+        <th id="th-sell">Sell ₴</th>
+      </tr>
+    </thead>
+    <tbody id="rateTableBody">
+      <tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:11px;padding:20px;">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ─── Constants ────────────────────────────────────────────────
+const CACHE_KEY = 'uah_rates_cache_v2';
+const CACHE_MAX_AGE_HOURS = 4; // refresh cached data if older than 4 hours
+const PROXY = 'https://api.allorigins.win/get?url=';
+const MAX_PARALLEL = 8; // fetch this many days at once
+
+// ─── State ────────────────────────────────────────────────────
+let currentCurrency = 'usd';
+let currentDays = 14;
+let chartInstance = null;
+let historicalData = []; // array of { date: 'DD.MM.YYYY', rates: { usd: {buyReal, sellReal}, eur: {buyReal, sellReal} } }
+
+// ─── Cache helpers ────────────────────────────────────────────
+function saveCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      savedAt: Date.now(),
+      data
+    }));
+  } catch(e) { /* storage full or unavailable */ }
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function cacheAgeHours(savedAt) {
+  return (Date.now() - savedAt) / 1000 / 3600;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+function fmt(n) { return n ? parseFloat(n).toFixed(2) : '—'; }
+
+function dateStrFromAgo(daysAgo) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+function parseDateKey(ddmmyyyy) {
+  const [d,m,y] = ddmmyyyy.split('.');
+  return new Date(y, m-1, d);
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('statusBar');
+  el.className = 'status-bar ' + (type || '');
+  if (type === 'loading') el.innerHTML = `<div class="spinner"></div>${msg}`;
+  else if (type === 'error') el.textContent = msg;
+}
+
+// ─── Fetch a single day from PrivatBank ───────────────────────
+async function fetchPrivatDay(dateStr) {
+  const url = `https://api.privatbank.ua/p24api/exchange_rates?json&date=${dateStr}`;
+  const resp = await fetch(PROXY + encodeURIComponent(url));
+  if (!resp.ok) throw new Error('Network error');
+  const outer = await resp.json();
+  const data = JSON.parse(outer.contents);
+  const rates = {};
+  for (const r of (data.exchangeRate || [])) {
+    if (r.currency === 'USD' || r.currency === 'EUR') {
+      rates[r.currency.toLowerCase()] = {
+        buyReal: r.purchaseRate || null,
+        sellReal: r.saleRate || null,
+      };
+    }
+  }
+  return { date: data.date, rates };
+}
+
+// ─── Fetch multiple days in parallel batches ──────────────────
+async function fetchDaysParallel(daysAgoList, onProgress) {
+  const results = [];
+  for (let i = 0; i < daysAgoList.length; i += MAX_PARALLEL) {
+    const batch = daysAgoList.slice(i, i + MAX_PARALLEL);
+    const fetches = batch.map(ago => {
+      const d = dateStrFromAgo(ago);
+      return fetchPrivatDay(d).catch(() => null);
+    });
+    const batchResults = await Promise.all(fetches);
+    batchResults.forEach(r => { if (r && r.rates.usd) results.push(r); });
+    if (onProgress) onProgress(Math.min(i + MAX_PARALLEL, daysAgoList.length), daysAgoList.length);
+  }
+  return results.sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date));
+}
+
+// ─── Merge new data into existing cache ───────────────────────
+function mergeData(existing, fresh) {
+  const map = new Map();
+  for (const d of existing) map.set(d.date, d);
+  for (const d of fresh) map.set(d.date, d);
+  return Array.from(map.values()).sort((a,b) => parseDateKey(a.date) - parseDateKey(b.date));
+}
+
+// ─── Determine which days need fetching ───────────────────────
+function getMissingDays(existing, neededDays) {
+  const existingDates = new Set(existing.map(d => d.date));
+  const missing = [];
+  for (let ago = neededDays; ago >= 0; ago--) {
+    const d = dateStrFromAgo(ago);
+    if (!existingDates.has(d)) missing.push(ago);
+  }
+  return missing;
+}
+
+// ─── Live rate cards ──────────────────────────────────────────
+function updateCards(today, yesterday) {
+  const fields = [
+    { id: 'r-usd-buy',  chg: 'c-usd-buy',  val: today?.usd?.buyReal,  prev: yesterday?.usd?.buyReal },
+    { id: 'r-usd-sell', chg: 'c-usd-sell', val: today?.usd?.sellReal, prev: yesterday?.usd?.sellReal },
+    { id: 'r-eur-buy',  chg: 'c-eur-buy',  val: today?.eur?.buyReal,  prev: yesterday?.eur?.buyReal },
+    { id: 'r-eur-sell', chg: 'c-eur-sell', val: today?.eur?.sellReal, prev: yesterday?.eur?.sellReal },
+  ];
+  for (const f of fields) {
+    const el = document.getElementById(f.id);
+    const chgEl = document.getElementById(f.chg);
+    if (el && f.val) el.textContent = fmt(f.val);
+    if (chgEl && f.val && f.prev) {
+      const diff = (parseFloat(f.val) - parseFloat(f.prev)).toFixed(2);
+      chgEl.textContent = `${diff > 0 ? '+' : ''}${diff} vs yesterday`;
+      chgEl.className = 'card-change ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : '');
+    }
+  }
+}
+
+// ─── Chart ────────────────────────────────────────────────────
+function buildChart(data, currency, days) {
+  const slice = data.slice(-days);
+  const labels = slice.map(d => d.date.substring(0,5));
+  const buyData = slice.map(d => d.rates[currency]?.buyReal || null);
+  const sellData = slice.map(d => d.rates[currency]?.sellReal || null);
+
+  const buyColor  = currency === 'usd' ? '#4caf7d' : '#5b9bd5';
+  const sellColor = currency === 'usd' ? '#e05252' : '#f5a623';
+  const buyFill   = currency === 'usd' ? 'rgba(76,175,125,0.07)' : 'rgba(91,155,213,0.07)';
+  const sellFill  = currency === 'usd' ? 'rgba(224,82,82,0.07)'  : 'rgba(245,166,35,0.07)';
+
+  const ctx = document.getElementById('rateChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Buy',  data: buyData,  borderColor: buyColor,  backgroundColor: buyFill,
+          borderWidth: 1.5, pointRadius: slice.length > 60 ? 0 : 3, pointHoverRadius: 5,
+          pointBackgroundColor: buyColor,  tension: 0.3, fill: true },
+        { label: 'Sell', data: sellData, borderColor: sellColor, backgroundColor: sellFill,
+          borderWidth: 1.5, pointRadius: slice.length > 60 ? 0 : 3, pointHoverRadius: 5,
+          pointBackgroundColor: sellColor, tension: 0.3, fill: true },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+          titleColor: '#888', bodyColor: '#e8e8e8',
+          titleFont: { family: 'IBM Plex Mono', size: 10 },
+          bodyFont:  { family: 'IBM Plex Mono', size: 12 },
+          padding: 10,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ₴${ctx.parsed.y?.toFixed(2)}` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 9 }, maxTicksLimit: 7, maxRotation: 0 },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555', font: { family: 'IBM Plex Mono', size: 9 }, callback: v => `₴${v.toFixed(1)}` },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// ─── Table ────────────────────────────────────────────────────
+function buildTable(data, currency, days) {
+  const slice = [...data].slice(-days).reverse();
+  const tbody = document.getElementById('rateTableBody');
+  const buyClass  = currency === 'usd' ? 'td-buy'     : 'td-buy-eur';
+  const sellClass = currency === 'usd' ? 'td-sell'    : 'td-sell-eur';
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);font-size:11px;padding:20px;">No data</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = slice.map(d => {
+    const r = d.rates[currency];
+    return `<tr>
+      <td>${d.date.substring(0,5)}</td>
+      <td class="${buyClass}">${r?.buyReal ? fmt(r.buyReal) : '—'}</td>
+      <td class="${sellClass}">${r?.sellReal ? fmt(r.sellReal) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── UI helpers ───────────────────────────────────────────────
+function renderChartAndTable() {
+  if (historicalData.length) {
+    buildChart(historicalData, currentCurrency, currentDays);
+    buildTable(historicalData, currentCurrency, currentDays);
+  }
+}
+
+function updateLegend(currency) {
+  const el = document.getElementById('chartLegend');
+  if (currency === 'usd') {
+    el.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Sell</div>`;
+  } else {
+    el.innerHTML = `<div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Buy</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Sell</div>`;
+  }
+}
+
+function switchCurrency(cur) {
+  currentCurrency = cur;
+  document.getElementById('tab-usd').className = 'currency-tab' + (cur==='usd' ? ' active usd' : '');
+  document.getElementById('tab-eur').className = 'currency-tab' + (cur==='eur' ? ' active eur' : '');
+  document.getElementById('chartTitle').textContent = `${cur.toUpperCase()}/UAH · ${currentDays} days`;
+  document.getElementById('tableTitle').textContent = `${cur.toUpperCase()}/UAH · Daily rates`;
+  updateLegend(cur);
+  renderChartAndTable();
+}
+
+function switchPeriod(days) {
+  currentDays = days;
+  ['1w','2w','1m','3m','1y'].forEach(p => document.getElementById('p-'+p).className = 'period-btn');
+  const map = {7:'1w',14:'2w',30:'1m',90:'3m',365:'1y'};
+  document.getElementById('p-'+map[days]).className = 'period-btn active';
+  document.getElementById('chartTitle').textContent = `${currentCurrency.toUpperCase()}/UAH · ${days} days`;
+
+  // If we don't have enough cached days, fetch the missing ones
+  const missing = getMissingDays(historicalData, days);
+  if (missing.length > 0) {
+    fetchMissing(missing);
+  } else {
+    renderChartAndTable();
+  }
+}
+
+// ─── Fetch only missing days and merge ────────────────────────
+async function fetchMissing(missingAgoList) {
+  setStatus('loading', `Fetching ${missingAgoList.length} missing day(s)…`);
+  try {
+    const fresh = await fetchDaysParallel(missingAgoList, (done, total) => {
+      setStatus('loading', `Loading history… ${done}/${total}`);
+    });
+    historicalData = mergeData(historicalData, fresh);
+    saveCache(historicalData);
+    renderChartAndTable();
+    setStatus('');
+  } catch(e) {
+    setStatus('error', '⚠ Could not load some data. Showing what is available.');
+    renderChartAndTable();
+  }
+}
+
+// ─── Main load ────────────────────────────────────────────────
+async function loadAll(forceRefresh = false) {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+
+  const cached = loadCache();
+  const cacheAge = cached ? cacheAgeHours(cached.savedAt) : Infinity;
+  const cacheIsFresh = cached && cacheAge < CACHE_MAX_AGE_HOURS;
+
+  // Show cache badge
+  const badge = document.getElementById('cacheBadge');
+  if (cacheIsFresh && !forceRefresh) {
+    const mins = Math.round(cacheAge * 60);
+    badge.textContent = `cached ${mins}m ago`;
+    badge.className = 'cache-badge fresh';
+  } else {
+    badge.textContent = '';
+    badge.className = 'cache-badge';
+  }
+
+  // If we have fresh cache and not forcing refresh, use it immediately
+  if (cacheIsFresh && !forceRefresh) {
+    historicalData = cached.data;
+    renderChartAndTable();
+
+    // Still update today's live card from network silently
+    loadLiveCards();
+    btn.classList.remove('loading');
+    return;
+  }
+
+  // Otherwise fetch everything needed
+  setStatus('loading', 'Fetching rate history…');
+
+  // Start with whatever is cached
+  if (cached) historicalData = cached.data;
+
+  // Determine which days are missing
+  const missing = getMissingDays(historicalData, Math.max(currentDays, 30)); // always cache at least 30 days
+  if (missing.length > 0) {
+    try {
+      const fresh = await fetchDaysParallel(missing, (done, total) => {
+        setStatus('loading', `Loading history… ${done}/${total}`);
+      });
+      historicalData = mergeData(historicalData, fresh);
+      saveCache(historicalData);
+    } catch(e) {
+      setStatus('error', '⚠ Network error. Showing cached data if available.');
+    }
+  }
+
+  renderChartAndTable();
+  await loadLiveCards();
+  setStatus('');
+  btn.classList.remove('loading');
+
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  badge.textContent = 'just now';
+  badge.className = 'cache-badge fresh';
+}
+
+async function loadLiveCards() {
+  try {
+    const todayStr   = dateStrFromAgo(0);
+    const yestStr    = dateStrFromAgo(1);
+    const [todayData, yestData] = await Promise.all([
+      fetchPrivatDay(todayStr),
+      fetchPrivatDay(yestStr)
+    ]);
+    updateCards(todayData.rates, yestData.rates);
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  } catch(e) {
+    // Use most recent cached data for cards if available
+    if (historicalData.length >= 2) {
+      const today = historicalData[historicalData.length - 1];
+      const yesterday = historicalData[historicalData.length - 2];
+      updateCards(today.rates, yesterday.rates);
+    }
+  }
+}
+
+// ─── Boot ─────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
